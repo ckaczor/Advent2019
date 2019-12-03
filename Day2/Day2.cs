@@ -20,7 +20,7 @@ namespace Advent
 
         private static int Calculate(int noun, int verb)
         {
-            var lines = File.ReadAllLines(@"C:\Users\chris\OneDrive\Desktop\input.txt");
+            var lines = File.ReadAllLines(@".\Day2\input.txt");
 
             var codes = lines[0].Split(',').Select(int.Parse).ToArray();
 

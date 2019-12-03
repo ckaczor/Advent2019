@@ -7,7 +7,7 @@ namespace Advent
     {
         public static void Execute()
         {
-            var lines = File.ReadAllLines(@"C:\Users\chris\OneDrive\Desktop\input.txt");
+            var lines = File.ReadAllLines(@".\Day1\input.txt");
 
             var total = 0.0;
 
