@@ -12,116 +12,128 @@ namespace Advent
             Immediate
         }
 
+        private readonly int[] _memory;
+        private readonly int _phase;
+
+        private bool _setPhase;
+        private int _instructionPointer;
+        private int _output;
+
+        public bool Halted { get; private set; }
+
+        public IntcodeComputer(string memoryString, int phase)
+        {
+            _memory = memoryString.Split(',').Select(int.Parse).ToArray();
+            _phase = phase;
+        }
+
         private static int GetValue(IReadOnlyList<int> codes, int parameter, ParameterMode mode)
         {
             return mode == ParameterMode.Immediate ? parameter : codes[parameter];
         }
 
-        public int? Execute(int[] inputs, string commands)
+        public int Execute(int input)
         {
-            var codes = commands.Split(',').Select(int.Parse).ToArray();
-
-            var position = 0;
-            var done = false;
-            var inputIndex = 0;
-            int? output = null;
-
-            while (!done)
+            while (!Halted)
             {
-                var (mode1, mode2, mode3, opCode) = ParseOpCode(codes[position]);
+                var (mode1, mode2, mode3, opCode) = ParseOpCode(_memory[_instructionPointer]);
 
                 switch (opCode)
                 {
                     case 1:
-                        codes[codes[position + 3]] = GetValue(codes, codes[position + 1], mode1) + GetValue(codes, codes[position + 2], mode2);
+                        _memory[_memory[_instructionPointer + 3]] = GetValue(_memory, _memory[_instructionPointer + 1], mode1) + GetValue(_memory, _memory[_instructionPointer + 2], mode2);
 
-                        position += 4;
+                        _instructionPointer += 4;
 
                         break;
 
                     case 2:
-                        codes[codes[position + 3]] = GetValue(codes, codes[position + 1], mode1) * GetValue(codes, codes[position + 2], mode2);
+                        _memory[_memory[_instructionPointer + 3]] = GetValue(_memory, _memory[_instructionPointer + 1], mode1) * GetValue(_memory, _memory[_instructionPointer + 2], mode2);
 
-                        position += 4;
+                        _instructionPointer += 4;
 
                         break;
 
                     case 3:
-                        codes[codes[position + 1]] = inputs[inputIndex++];
+                        var inputValue = _setPhase ? input : _phase;
 
-                        position += 2;
+                        _setPhase = true;
+
+                        _memory[_memory[_instructionPointer + 1]] = inputValue;
+
+                        _instructionPointer += 2;
 
                         break;
 
                     case 4:
-                        output = GetValue(codes, codes[position + 1], ParameterMode.Position);
+                        _output = GetValue(_memory, _memory[_instructionPointer + 1], ParameterMode.Position);
 
-                        position += 2;
+                        _instructionPointer += 2;
 
-                        break;
+                        return _output;
 
                     case 5:
                         {
-                            var value = GetValue(codes, codes[position + 1], mode1);
+                            var value = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
 
                             if (value != 0)
-                                position = GetValue(codes, codes[position + 2], mode2);
+                                _instructionPointer = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
                             else
-                                position += 3;
+                                _instructionPointer += 3;
                         }
 
                         break;
 
                     case 6:
                         {
-                            var value = GetValue(codes, codes[position + 1], mode1);
+                            var value = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
 
                             if (value == 0)
-                                position = GetValue(codes, codes[position + 2], mode2);
+                                _instructionPointer = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
                             else
-                                position += 3;
+                                _instructionPointer += 3;
                         }
 
                         break;
 
                     case 7:
                         {
-                            var value1 = GetValue(codes, codes[position + 1], mode1);
-                            var value2 = GetValue(codes, codes[position + 2], mode2);
+                            var value1 = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
+                            var value2 = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
 
                             if (value1 < value2)
-                                codes[codes[position + 3]] = 1;
+                                _memory[_memory[_instructionPointer + 3]] = 1;
                             else
-                                codes[codes[position + 3]] = 0;
+                                _memory[_memory[_instructionPointer + 3]] = 0;
 
-                            position += 4;
+                            _instructionPointer += 4;
                         }
 
                         break;
 
                     case 8:
                         {
-                            var value1 = GetValue(codes, codes[position + 1], mode1);
-                            var value2 = GetValue(codes, codes[position + 2], mode2);
+                            var value1 = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
+                            var value2 = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
 
                             if (value1 == value2)
-                                codes[codes[position + 3]] = 1;
+                                _memory[_memory[_instructionPointer + 3]] = 1;
                             else
-                                codes[codes[position + 3]] = 0;
+                                _memory[_memory[_instructionPointer + 3]] = 0;
 
-                            position += 4;
+                            _instructionPointer += 4;
                         }
 
                         break;
 
                     case 99:
-                        done = true;
+                        Halted = true;
 
-                        break;
+                        return _output;
                 }
             }
 
-            return output;
+            return _output;
         }
 
         private static (ParameterMode mode1, ParameterMode mode2, ParameterMode mode3, int opCode) ParseOpCode(int fullOpCode)
