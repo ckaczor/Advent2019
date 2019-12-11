@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Advent
 {
@@ -55,6 +56,38 @@ namespace Advent
             }
 
             Console.WriteLine($"{bestLocation.Item1},{bestLocation.Item2} = {bestCount}");
+
+            var bestAngles = new Dictionary<double, Tuple<int, int>>();
+
+            foreach (var asteroid in asteroids)
+            {
+                if (asteroid.Equals(bestLocation))
+                    continue;
+
+                var deltaY = asteroid.Item1 - bestLocation.Item1;
+                var deltaX = asteroid.Item2 - bestLocation.Item2;
+
+                var angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+
+                if (!bestAngles.ContainsKey(angle))
+                    bestAngles[angle] = asteroid;
+                else
+                {
+                    var bestDistance = Math.Sqrt(Math.Pow(bestAngles[angle].Item2 - bestLocation.Item2, 2) + Math.Pow(bestAngles[angle].Item1 - bestLocation.Item1, 2));
+                    var currentDistance = Math.Sqrt(Math.Pow(deltaX, 2) + Math.Pow(deltaY, 2));
+
+                    if (currentDistance < bestDistance)
+                        bestAngles[angle] = asteroid;
+                }
+            }
+
+            var sortedAngles = bestAngles.Where(b => b.Key >= 0).OrderByDescending(b => b.Key).ToList();
+
+            sortedAngles.AddRange(bestAngles.Where(b => b.Key < 0).OrderByDescending(b => b.Key).ToList());
+
+            var betAngle = sortedAngles[199];
+
+            Console.WriteLine(betAngle.Value.Item1 * 100 + betAngle.Value.Item2);
         }
     }
 }
