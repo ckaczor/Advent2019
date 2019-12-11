@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Advent
@@ -9,30 +8,60 @@ namespace Advent
         private enum ParameterMode
         {
             Position,
-            Immediate
+            Immediate,
+            Relative
         }
 
-        private readonly int[] _memory;
-        private readonly int _phase;
+        private readonly long[] _memory;
+        private readonly long _phase;
 
         private bool _setPhase;
-        private int _instructionPointer;
-        private int _output;
+        private long _instructionPointer;
+        private long _output;
+        private long _relativeBase;
 
         public bool Halted { get; private set; }
 
-        public IntcodeComputer(string memoryString, int phase)
+        public IntcodeComputer(string memoryString, long phase)
         {
-            _memory = memoryString.Split(',').Select(int.Parse).ToArray();
+            _memory = new long[5000];
+
+            memoryString.Split(',').Select(long.Parse).ToArray().CopyTo(_memory, 0);
+
             _phase = phase;
         }
 
-        private static int GetValue(IReadOnlyList<int> codes, int parameter, ParameterMode mode)
+        private long GetValue(long parameter, ParameterMode mode)
         {
-            return mode == ParameterMode.Immediate ? parameter : codes[parameter];
+            switch (mode)
+            {
+                case ParameterMode.Position:
+                    return _memory[parameter];
+                case ParameterMode.Immediate:
+                    return parameter;
+                case ParameterMode.Relative:
+                    return _memory[_relativeBase + parameter];
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+            }
         }
 
-        public int Execute(int input)
+        private void SetValue(long value, long location, ParameterMode mode)
+        {
+            switch (mode)
+            {
+                case ParameterMode.Position:
+                    _memory[location] = value;
+                    break;
+                case ParameterMode.Relative:
+                    _memory[_relativeBase + location] = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+            }
+        }
+
+        public long Execute(long input)
         {
             while (!Halted)
             {
@@ -41,32 +70,42 @@ namespace Advent
                 switch (opCode)
                 {
                     case 1:
-                        _memory[_memory[_instructionPointer + 3]] = GetValue(_memory, _memory[_instructionPointer + 1], mode1) + GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                        {
+                            var newValue = GetValue(_memory[_instructionPointer + 1], mode1) + GetValue(_memory[_instructionPointer + 2], mode2);
 
-                        _instructionPointer += 4;
+                            SetValue(newValue, _memory[_instructionPointer + 3], mode3);
 
-                        break;
+                            _instructionPointer += 4;
+
+                            break;
+                        }
 
                     case 2:
-                        _memory[_memory[_instructionPointer + 3]] = GetValue(_memory, _memory[_instructionPointer + 1], mode1) * GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                        {
+                            var newValue = GetValue(_memory[_instructionPointer + 1], mode1) * GetValue(_memory[_instructionPointer + 2], mode2);
 
-                        _instructionPointer += 4;
+                            SetValue(newValue, _memory[_instructionPointer + 3], mode3);
 
-                        break;
+                            _instructionPointer += 4;
+
+                            break;
+                        }
 
                     case 3:
                         var inputValue = _setPhase ? input : _phase;
 
                         _setPhase = true;
 
-                        _memory[_memory[_instructionPointer + 1]] = inputValue;
+                        var writeValue = _memory[_instructionPointer + 1];
+
+                        SetValue(inputValue, _memory[_instructionPointer + 3], mode3);
 
                         _instructionPointer += 2;
 
                         break;
 
                     case 4:
-                        _output = GetValue(_memory, _memory[_instructionPointer + 1], ParameterMode.Position);
+                        _output = GetValue(_memory[_instructionPointer + 1], mode1);
 
                         _instructionPointer += 2;
 
@@ -74,10 +113,10 @@ namespace Advent
 
                     case 5:
                         {
-                            var value = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
+                            var value = GetValue(_memory[_instructionPointer + 1], mode1);
 
                             if (value != 0)
-                                _instructionPointer = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                                _instructionPointer = GetValue(_memory[_instructionPointer + 2], mode2);
                             else
                                 _instructionPointer += 3;
                         }
@@ -86,10 +125,10 @@ namespace Advent
 
                     case 6:
                         {
-                            var value = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
+                            var value = GetValue(_memory[_instructionPointer + 1], mode1);
 
                             if (value == 0)
-                                _instructionPointer = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                                _instructionPointer = GetValue(_memory[_instructionPointer + 2], mode2);
                             else
                                 _instructionPointer += 3;
                         }
@@ -98,13 +137,13 @@ namespace Advent
 
                     case 7:
                         {
-                            var value1 = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
-                            var value2 = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                            var value1 = GetValue(_memory[_instructionPointer + 1], mode1);
+                            var value2 = GetValue(_memory[_instructionPointer + 2], mode2);
 
                             if (value1 < value2)
-                                _memory[_memory[_instructionPointer + 3]] = 1;
+                                SetValue(1, _memory[_instructionPointer + 3], mode3);
                             else
-                                _memory[_memory[_instructionPointer + 3]] = 0;
+                                SetValue(0, _memory[_instructionPointer + 3], mode3);
 
                             _instructionPointer += 4;
                         }
@@ -113,16 +152,23 @@ namespace Advent
 
                     case 8:
                         {
-                            var value1 = GetValue(_memory, _memory[_instructionPointer + 1], mode1);
-                            var value2 = GetValue(_memory, _memory[_instructionPointer + 2], mode2);
+                            var value1 = GetValue(_memory[_instructionPointer + 1], mode1);
+                            var value2 = GetValue(_memory[_instructionPointer + 2], mode2);
 
                             if (value1 == value2)
-                                _memory[_memory[_instructionPointer + 3]] = 1;
+                                SetValue(1, _memory[_instructionPointer + 3], mode3);
                             else
-                                _memory[_memory[_instructionPointer + 3]] = 0;
+                                SetValue(0, _memory[_instructionPointer + 3], mode3);
 
                             _instructionPointer += 4;
                         }
+
+                        break;
+
+                    case 9:
+                        _relativeBase += GetValue(_memory[_instructionPointer + 1], mode1);
+
+                        _instructionPointer += 2;
 
                         break;
 
@@ -136,7 +182,7 @@ namespace Advent
             return _output;
         }
 
-        private static (ParameterMode mode1, ParameterMode mode2, ParameterMode mode3, int opCode) ParseOpCode(int fullOpCode)
+        private static (ParameterMode mode1, ParameterMode mode2, ParameterMode mode3, int opCode) ParseOpCode(long fullOpCode)
         {
             var codeString = fullOpCode.ToString("00000").ToCharArray();
 

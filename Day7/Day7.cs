@@ -14,11 +14,11 @@ namespace Advent
             //var program = "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10";
             //var phaseList = new List<int[]> { "9,7,8,5,6".Split(',').Select(c => int.Parse(c.ToString())).ToArray() };
 
-            int? max = 0;
+            long? max = 0;
 
             foreach (var phases in phaseList)
             {
-                var value = 0;
+                var value = 0L;
 
                 var amp1 = new IntcodeComputer(program, phases[0]);
                 var amp2 = new IntcodeComputer(program, phases[1]);
@@ -42,15 +42,15 @@ namespace Advent
             Console.WriteLine(max);
         }
 
-        private static IEnumerable<int[]> GetPhaseList()
+        private static IEnumerable<long[]> GetPhaseList()
         {
             // This is a stupid brute force way to do it but I'm lazy and it is fast so good enough
 
-            var phaseList = new List<int[]>();
+            var phaseList = new List<long[]>();
 
             for (var i = 0; i <= 99999; i++)
             {
-                var phases = i.ToString("00000").ToCharArray().Select(c => int.Parse(c.ToString())).ToArray();
+                var phases = i.ToString("00000").ToCharArray().Select(c => long.Parse(c.ToString())).ToArray();
 
                 if (phases.All(p => p >= 5) && phases.Distinct().Count() == 5)
                     phaseList.Add(phases);
