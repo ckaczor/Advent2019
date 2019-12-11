@@ -96,9 +96,7 @@ namespace Advent
 
                         _setPhase = true;
 
-                        var writeValue = _memory[_instructionPointer + 1];
-
-                        SetValue(inputValue, _memory[_instructionPointer + 3], mode3);
+                        SetValue(inputValue, _memory[_instructionPointer + 1], mode1);
 
                         _instructionPointer += 2;
 

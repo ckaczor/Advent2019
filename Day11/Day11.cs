@@ -14,6 +14,7 @@ namespace Advent
             var x = 0;
             var y = 0;
             var direction = 0;
+            var paintCount = 0;
 
             while (!robot.Halted)
             {
@@ -21,11 +22,52 @@ namespace Advent
 
                 var currentColor = panels.ContainsKey(key) ? panels[key] : 0;
 
-                var color = robot.Execute(0);
-                var turn = robot.Execute(0);
+                var color = robot.Execute(currentColor);
+
+                if (color != currentColor && !panels.ContainsKey(key))
+                    paintCount++;
 
                 panels[key] = color;
+
+                var turn = robot.Execute(0);
+
+                switch (turn)
+                {
+                    case 0:
+                        direction -= 90;
+
+                        if (direction < 0)
+                            direction += 360;
+
+                        break;
+
+                    case 1:
+                        direction += 90;
+
+                        if (direction >= 360)
+                            direction -= 360;
+
+                        break;
+                }
+
+                switch (direction)
+                {
+                    case 0:
+                        y++;
+                        break;
+                    case 90:
+                        x++;
+                        break;
+                    case 180:
+                        y--;
+                        break;
+                    case 270:
+                        x--;
+                        break;
+                }
             }
+
+            Console.WriteLine(paintCount);
         }
     }
 }
