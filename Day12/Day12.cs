@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Advent
 {
@@ -30,7 +31,16 @@ namespace Advent
             public Coordinates Position { get; }
             public Coordinates Velocity { get; }
 
-            public string GetState()
+            public string GetStateX()
+            {
+                return $"{Position.X},{Velocity.X}";
+            }
+            public string GetStateY()
+            {
+                return $"{Position.Y},{Velocity.Y}";
+            }
+
+            public string GetStateZ()
             {
                 return $"{Position.Z},{Velocity.Z}";
             }
@@ -68,10 +78,13 @@ namespace Advent
                 new Moon(-16, 4,  2 )
             };
 
-            //Console.WriteLine(lcm_of_array_elements(new long[] { 113028, 167624, 231614 }));
-            //return;
+            var previousStatesX = new Dictionary<string, int>();
+            var previousStatesY = new Dictionary<string, int>();
+            var previousStatesZ = new Dictionary<string, int>();
 
-            var previousStates = new Dictionary<string, int>();
+            var xRepeat = 0;
+            var yRepeat = 0;
+            var zRepeat = 0;
 
             var index = 1;
 
@@ -126,22 +139,70 @@ namespace Advent
                     moon.Position.Z += moon.Velocity.Z;
                 }
 
-                var states = new List<string>();
-
-                foreach (var moon in moons)
-                    states.Add(moon.GetState());
-
-                var totalState = string.Join(':', states.ToArray());
-
-                if (previousStates.ContainsKey(totalState))
+                if (xRepeat == 0)
                 {
-                    Console.WriteLine(index - previousStates[totalState]);
+                    var statesX = new List<string>();
+
+                    foreach (var moon in moons)
+                        statesX.Add(moon.GetStateX());
+
+                    var totalState = string.Join(':', statesX.ToArray());
+
+                    if (previousStatesX.ContainsKey(totalState))
+                    {
+                        xRepeat = index - previousStatesX[totalState];
+                        Console.WriteLine($"X: {xRepeat}");
+                    }
+                    else
+                    {
+                        previousStatesX[totalState] = index;
+                    }
+                }
+
+                if (yRepeat == 0)
+                {
+                    var statesY = new List<string>();
+
+                    foreach (var moon in moons)
+                        statesY.Add(moon.GetStateY());
+
+                    var totalState = string.Join(':', statesY.ToArray());
+
+                    if (previousStatesY.ContainsKey(totalState))
+                    {
+                        yRepeat = index - previousStatesY[totalState];
+                        Console.WriteLine($"Y: {yRepeat}");
+                    }
+                    else
+                    {
+                        previousStatesY[totalState] = index;
+                    }
+                }
+
+                if (zRepeat == 0)
+                {
+                    var statesZ = new List<string>();
+
+                    foreach (var moon in moons)
+                        statesZ.Add(moon.GetStateZ());
+
+                    var totalState = string.Join(':', statesZ.ToArray());
+
+                    if (previousStatesZ.ContainsKey(totalState))
+                    {
+                        zRepeat = index - previousStatesZ[totalState];
+                        Console.WriteLine($"Z: {zRepeat}");
+                    }
+                    else
+                    {
+                        previousStatesZ[totalState] = index;
+                    }
+                }
+
+                index++;
+
+                if (xRepeat > 0 && yRepeat > 0 && zRepeat > 0)
                     break;
-                }
-                else
-                {
-                    previousStates[totalState] = index++;
-                }
             }
 
             //var totalEnergy = 0;
@@ -155,67 +216,29 @@ namespace Advent
             //}
 
             //Console.WriteLine(totalEnergy);
+
+            Console.WriteLine(CalculateLcm(new long[] { xRepeat, yRepeat, zRepeat }));
         }
 
-        private static long lcm_of_array_elements(long[] element_array)
+        private static long CalculateLcm(IEnumerable<long> numbers)
         {
-            long lcm_of_array_elements = 1;
-            int divisor = 2;
+            return numbers.Aggregate(CalculateLcm);
+        }
+        private static long CalculateLcm(long a, long b)
+        {
+            return Math.Abs(a * b) / CalculateGcd(a, b);
+        }
 
+        private static long CalculateGcd(long a, long b)
+        {
             while (true)
             {
+                if (b == 0)
+                    return a;
 
-                int counter = 0;
-                bool divisible = false;
-                for (int i = 0; i < element_array.Length; i++)
-                {
-
-                    // lcm_of_array_elements (n1, n2, ... 0) = 0. 
-                    // For negative number we convert into 
-                    // positive and calculate lcm_of_array_elements. 
-                    if (element_array[i] == 0)
-                    {
-                        return 0;
-                    }
-                    else if (element_array[i] < 0)
-                    {
-                        element_array[i] = element_array[i] * (-1);
-                    }
-                    if (element_array[i] == 1)
-                    {
-                        counter++;
-                    }
-
-                    // Divide element_array by devisor if complete 
-                    // division i.e. without remainder then replace 
-                    // number with quotient; used for find next factor 
-                    if (element_array[i] % divisor == 0)
-                    {
-                        divisible = true;
-                        element_array[i] = element_array[i] / divisor;
-                    }
-                }
-
-                // If divisor able to completely divide any number 
-                // from array multiply with lcm_of_array_elements 
-                // and store into lcm_of_array_elements and continue 
-                // to same divisor for next factor finding. 
-                // else increment divisor 
-                if (divisible)
-                {
-                    lcm_of_array_elements = lcm_of_array_elements * divisor;
-                }
-                else
-                {
-                    divisor++;
-                }
-
-                // Check if all element_array is 1 indicate  
-                // we found all factors and terminate while loop. 
-                if (counter == element_array.Length)
-                {
-                    return lcm_of_array_elements;
-                }
+                var a1 = a;
+                a = b;
+                b = a1 % b;
             }
         }
     }
