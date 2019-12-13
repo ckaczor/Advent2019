@@ -19,16 +19,20 @@ namespace Advent
         private long _instructionPointer;
         private long _output;
         private long _relativeBase;
+        private InputDelegate _onInput;
 
         public bool Halted { get; private set; }
 
-        public IntcodeComputer(string memoryString, long phase)
+        public delegate long InputDelegate();
+
+        public IntcodeComputer(string memoryString, long phase, InputDelegate onInput = null)
         {
             _memory = new long[5000];
 
             memoryString.Split(',').Select(long.Parse).ToArray().CopyTo(_memory, 0);
 
             _phase = phase;
+            _onInput = onInput;
         }
 
         private long GetValue(long parameter, ParameterMode mode)
@@ -95,6 +99,9 @@ namespace Advent
                         var inputValue = _setPhase ? input : _phase;
 
                         _setPhase = true;
+
+                        if (_onInput != null)
+                            inputValue = _onInput();
 
                         SetValue(inputValue, _memory[_instructionPointer + 1], mode1);
 
